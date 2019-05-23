@@ -7,3 +7,5 @@
 * 数据部分获取快速，服务端一般都是内网请求获取数据，相比前端走http外网获取数据，网络开销小
 
 ## 服务端渲染 VS 客户端渲染
+<img src="https://github.com/zhaocancsu/content/blob/master/0523-2.png" width="600" />
+<img src="https://github.com/zhaocancsu/content/blob/master/0523-1.png" width="600" />
