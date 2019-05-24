@@ -9,3 +9,21 @@
 ## 服务端渲染 VS 客户端渲染
 <img src="https://github.com/zhaocancsu/content/blob/master/0523-2.png" width="600" />
 <img src="https://github.com/zhaocancsu/content/blob/master/0523-1.png" width="600" />
+
+
+java服务端ssr选型
+
+### velocity 
+velocity根据view path加载 resolver
+```Java
+protected ViewResolver getSpringViewResolver(Invocation inv, String viewPath)
+            throws IOException {
+        if (viewPath.endsWith(".vm")) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("to get velocity view resolver.");
+            }
+            return getVelocityViewResolver(inv, viewPath);
+        }
+    .....
+}
+```
