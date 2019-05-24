@@ -27,3 +27,29 @@ protected ViewResolver getSpringViewResolver(Invocation inv, String viewPath)
     .....
 }
 ```
+
+### velocity模板渲染原理
+<img src="https://github.com/zhaocancsu/content/blob/master/liucheng.png" width="600" />
+
+```Java
+            //1.初始化配置
+            Velocity.init("velocity.properties");
+
+            //2.创建context，存放变量
+            VelocityContext context = new VelocityContext();
+            Person person = new Person();
+            person.setName("jiaduo");
+            context.put("person", person);
+
+            //3.加载模板文件到内存
+            Template template = null;
+            String templateFile = "index.vm";
+            template = Velocity.getTemplate(templateFile);
+
+            //4.渲染
+            StringWriter stringWriter = new StringWriter();
+            template.merge(context, stringWriter);
+
+            //5.打印结果
+            System.out.println(stringWriter.toString());
+```
