@@ -28,7 +28,7 @@ protected ViewResolver getSpringViewResolver(Invocation inv, String viewPath)
 }
 ```
 
-### velocity模板渲染原理
+### velocity模板加载输出过程
 <img src="https://github.com/zhaocancsu/content/blob/master/liucheng.png" width="600" />
 
 ```Java
@@ -38,7 +38,7 @@ protected ViewResolver getSpringViewResolver(Invocation inv, String viewPath)
             //2.创建context，存放变量
             VelocityContext context = new VelocityContext();
             Person person = new Person();
-            person.setName("jiaduo");
+            person.setName("test");
             context.put("person", person);
 
             //3.加载模板文件到内存
@@ -53,3 +53,37 @@ protected ViewResolver getSpringViewResolver(Invocation inv, String viewPath)
             //5.打印结果
             System.out.println(stringWriter.toString());
 ```
+### 渲染流程
+* 根据模板文件(.vm文件)中定义的语法内容解析成一个抽象语法树(AST)
+* 从root节点通过深度优先搜索的方式遍历节点进行渲染处理
+
+非叶子节点
+```Java
+public boolean render( InternalContextAdapter context, Writer writer)
+        throws IOException, MethodInvocationException, ParseErrorException, ResourceNotFoundException
+    {
+        int i, k = jjtGetNumChildren();
+
+        for (i = 0; i < k; i++)
+            jjtGetChild(i).render(context, writer);
+
+        return true;
+    }
+```
+叶子节点
+```Java
+public boolean render( InternalContextAdapter context, Writer writer)
+        throws IOException
+    {
+        writer.write(ctext);
+        return true;
+    }
+```
+例子，如果模板文件内容如下<br>
+```
+<html>
+   <div>$!{person.sayHello()}:$!{person.name}</div>
+</html>
+```
+解析生成的AST:
+<img src="https://github.com/zhaocancsu/content/blob/master/ast.png" width="600" />
