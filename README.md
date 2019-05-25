@@ -56,8 +56,9 @@ protected ViewResolver getSpringViewResolver(Invocation inv, String viewPath)
 ### 渲染流程
 * 根据模板文件(.vm文件)中定义的语法内容解析成一个抽象语法树(AST)
 * 从root节点通过深度优先搜索的方式遍历节点进行渲染处理
+* 不同类型子节点渲染方法不一样(render方法实现的不一样)
 
-非叶子节点
+根节点
 ```Java
 public boolean render( InternalContextAdapter context, Writer writer)
         throws IOException, MethodInvocationException, ParseErrorException, ResourceNotFoundException
@@ -70,7 +71,7 @@ public boolean render( InternalContextAdapter context, Writer writer)
         return true;
     }
 ```
-叶子节点
+文本节点
 ```Java
 public boolean render( InternalContextAdapter context, Writer writer)
         throws IOException
@@ -89,3 +90,118 @@ public boolean render( InternalContextAdapter context, Writer writer)
 解析生成的AST,如下
 
 <img src="https://github.com/zhaocancsu/content/blob/master/ast.jpg" width="600" />
+
+ASTReference.ASTMethod.execute
+```Java
+VelMethod method = ClassUtils.getMethod(methodName, params, paramClasses, 
+            o, context, this, strictRef);
+        if (method == null) return null;
+
+        try
+        {
+            /*
+             *  get the returned object.  It may be null, and that is
+             *  valid for something declared with a void return type.
+             *  Since the caller is expecting something to be returned,
+             *  as long as things are peachy, we can return an empty
+             *  String so ASTReference() correctly figures out that
+             *  all is well.
+             */
+
+            Object obj = method.invoke(o, params);
+
+            if (obj == null)
+            {
+                if( method.getReturnType() == Void.TYPE)
+                {
+                    return "";
+                }
+            }
+
+            return obj;
+        }
+        catch( InvocationTargetException ite )
+        {
+            return handleInvocationException(o, context, ite.getTargetException());
+        }
+```
+ASTReference.ASTIdentifier.execute
+```Java
+VelPropertyGet vg = null;
+
+        try
+        {
+            /*
+             *  first, see if we have this information cached.
+             */
+
+            IntrospectionCacheData icd = context.icacheGet(this);
+
+            /*
+             * if we have the cache data and the class of the object we are
+             * invoked with is the same as that in the cache, then we must
+             * be allright.  The last 'variable' is the method name, and
+             * that is fixed in the template :)
+             */
+
+            if ( icd != null && (o != null) && (icd.contextData == o.getClass()) )
+            {
+                vg = (VelPropertyGet) icd.thingy;
+            }
+            else
+            {
+                /*
+                 *  otherwise, do the introspection, and cache it.  Use the
+                 *  uberspector
+                 */
+
+                vg = rsvc.getUberspect().getPropertyGet(o,identifier, uberInfo);
+
+                if (vg != null && vg.isCacheable() && (o != null))
+                {
+                    icd = new IntrospectionCacheData();
+                    icd.contextData = o.getClass();
+                    icd.thingy = vg;
+                    context.icachePut(this,icd);
+                }
+            }
+        }
+
+        /**
+         * pass through application level runtime exceptions
+         */
+        catch( RuntimeException e )
+        {
+            throw e;
+        }
+        catch(Exception e)
+        {
+            String msg = "ASTIdentifier.execute() : identifier = "+identifier;
+            log.error(msg, e);
+            throw new VelocityException(msg, e);
+        }
+
+       .......
+
+        /*
+         *  now try and execute.  If we get a MIE, throw that
+         *  as the app wants to get these.  If not, log and punt.
+         */
+        try
+        {
+            return vg.invoke(o);
+        }
+        catch(InvocationTargetException ite)
+        {
+        .......
+        }
+```
+
+如果对于同一个对象的同一个属性或方法重复多次调用，可考虑使用临时变量保存<br>
+#set($name=$!person.name)
+
+## rose中velocity的使用方式
+* 在resources中定义velocity.properites
+* 模板文件要放在"/views/模块名/"下
+* 变量信息通过Invocation.addModel(key,value)设置
+* controller中返回要渲染的模板名称(不带.vm)
