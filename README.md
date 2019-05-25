@@ -85,5 +85,6 @@ public boolean render( InternalContextAdapter context, Writer writer)
    <div>$!{person.sayHello()}:$!{person.name}</div>
 </html>
 ```
-解析生成的AST:
-<img src="https://github.com/zhaocancsu/content/blob/master/ast.png" width="600" />
+解析生成的AST,如下
+
+<img src="https://github.com/zhaocancsu/content/blob/master/ast.jpg" width="600" />
